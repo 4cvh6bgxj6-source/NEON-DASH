@@ -29,7 +29,7 @@ const App: React.FC = () => {
 
   const [gems, setGems] = useState<number>(() => {
     const saved = safeGetItem('nd_gems', '0');
-    return parseInt(saved);
+    return parseInt(saved) || 0;
   });
 
   const [unlockedSkinIds, setUnlockedSkinIds] = useState<string[]>(() => {
@@ -65,7 +65,9 @@ const App: React.FC = () => {
           if (!newIds.includes(s.id)) newIds.push(s.id);
         });
       }
-      return Array.from(new Set(newIds));
+      const uniqueIds = Array.from(new Set(newIds));
+      if (uniqueIds.length !== prev.length) return uniqueIds;
+      return prev;
     });
   }, [hasVip, hasPremium]);
 
@@ -80,12 +82,6 @@ const App: React.FC = () => {
       console.warn("LocalStorage non disponibile");
     }
   }, [gems, unlockedSkinIds, selectedSkin, hasVip, hasPremium]);
-
-  useEffect(() => {
-    const savedSkinId = safeGetItem('nd_selected_skin_id', '1');
-    const skin = SKINS.find(s => s.id === savedSkinId);
-    if (skin) setSelectedSkin(skin);
-  }, []);
 
   const handleStartGame = () => {
     let modifiedConfig = { ...levelConfig };
@@ -127,35 +123,8 @@ const App: React.FC = () => {
     }
   };
 
-  const generateSyncKey = () => {
-    const data: ProgressData = {
-      gems, unlockedSkinIds, lastSelectedSkinId: selectedSkin.id,
-      timestamp: Date.now(), hasVip, hasPremium
-    };
-    return btoa(JSON.stringify(data));
-  };
-
-  const handleImportSyncKey = () => {
-    try {
-      const data: ProgressData = JSON.parse(atob(syncKeyInput));
-      if (typeof data.gems === 'number') {
-        setGems(data.gems);
-        setUnlockedSkinIds(data.unlockedSkinIds);
-        setHasVip(!!data.hasVip);
-        setHasPremium(!!data.hasPremium);
-        const skin = SKINS.find(s => s.id === data.lastSelectedSkinId);
-        if (skin) setSelectedSkin(skin);
-        setSyncStatus('success');
-        setTimeout(() => { setIsSyncModalOpen(false); setSyncStatus('idle'); setSyncKeyInput(''); }, 1500);
-      }
-    } catch (e) {
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 2000);
-    }
-  };
-
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#050505] text-white">
+    <div className="relative w-full h-full flex flex-col items-center justify-center bg-[#050505] text-white">
       <div className="absolute inset-0 opacity-10 pointer-events-none transition-all duration-1000" style={{ background: `radial-gradient(circle at center, ${levelConfig.primaryColor} 0%, transparent 70%)` }} />
 
       {gameState !== GameState.PLAYING && (
@@ -166,30 +135,10 @@ const App: React.FC = () => {
                 {hasVip ? 'MEMBRO VIP' : hasPremium ? 'MEMBRO PREMIUM' : 'PILOTA FREE'}
               </span>
             </div>
-            <button onClick={() => setIsSyncModalOpen(true)} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-5 py-2 rounded-full border border-blue-600/30 transition-all flex items-center gap-2">
-              <i className="fas fa-sync-alt"></i>
-              <span className="text-[10px] font-black uppercase">Sync</span>
-            </button>
           </div>
           <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
             <i className="fas fa-gem text-blue-400"></i>
             <span className="font-orbitron font-black text-xl">{gems}</span>
-          </div>
-        </div>
-      )}
-
-      {isSyncModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-lg">
-          <div className="bg-[#111] border-2 border-blue-500/50 p-10 rounded-[2.5rem] w-full max-w-lg space-y-6 relative">
-            <h3 className="text-2xl font-black uppercase text-center text-blue-400">Sincronizzazione</h3>
-            <div className="space-y-4">
-              <Button onClick={() => { navigator.clipboard.writeText(generateSyncKey()); setSyncStatus('success'); setTimeout(() => setSyncStatus('idle'), 1000); }} variant="secondary" className="w-full">
-                {syncStatus === 'success' ? 'Copiato!' : 'Copia Sync Key'}
-              </Button>
-              <textarea placeholder="Incolla Sync Key..." value={syncKeyInput} onChange={e => setSyncKeyInput(e.target.value)} className="w-full h-24 bg-black border border-white/10 rounded-xl p-3 text-xs font-mono" />
-              <Button onClick={handleImportSyncKey} variant="primary" className="w-full">Importa</Button>
-            </div>
-            <button onClick={() => setIsSyncModalOpen(false)} className="absolute top-4 right-4"><i className="fas fa-times"></i></button>
           </div>
         </div>
       )}
@@ -199,9 +148,9 @@ const App: React.FC = () => {
       ) : (
         <div className="z-10 w-full max-w-4xl px-6 flex flex-col items-center">
           {gameState === GameState.START && (
-            <div className="text-center space-y-12 w-full">
+            <div className="text-center space-y-12 w-full animate-in fade-in duration-500">
               <div className="space-y-2">
-                <h1 className="text-8xl font-black font-orbitron italic tracking-tighter drop-shadow-2xl">
+                <h1 className="text-6xl md:text-8xl font-black font-orbitron italic tracking-tighter drop-shadow-2xl">
                   NEON<span style={{ color: levelConfig.primaryColor }}>DASH</span>
                 </h1>
                 {IS_CHRISTMAS && <div className="text-red-500 font-bold animate-pulse text-sm">🎄 SCONTI DI NATALE: -25% NEL VIP SHOP! 🎅</div>}
@@ -225,7 +174,7 @@ const App: React.FC = () => {
           )}
 
           {gameState === GameState.MEMBERSHIP_SHOP && (
-            <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom">
+            <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom duration-500">
               <h2 className="text-5xl font-orbitron font-black uppercase italic">ZONA <span className="text-yellow-500">MEMBERSHIP</span></h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                 <div className={`p-8 rounded-[2.5rem] border-2 bg-black/60 relative flex flex-col items-center gap-6 ${hasPremium ? 'border-green-500' : 'border-purple-500/50'}`}>
@@ -250,7 +199,7 @@ const App: React.FC = () => {
           )}
 
           {gameState === GameState.SKIN_SHOP && (
-            <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom">
+            <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom duration-500">
               <h2 className="text-5xl font-orbitron font-black uppercase italic">SKIN <span className="text-blue-500">VAULT</span></h2>
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-6 overflow-y-auto max-h-[50vh]">
                 {SKINS.map(s => {
@@ -264,26 +213,28 @@ const App: React.FC = () => {
                   );
                 })}
               </div>
-              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12 mt-4">CHIUDI VAULT</Button>
+              <div className="mt-4">
+                <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12">CHIUDI VAULT</Button>
+              </div>
             </div>
           )}
 
           {gameState === GameState.GAMEOVER && (
-            <div className="text-center space-y-8 w-full animate-in zoom-in">
-              <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic`}>{lastReason === 'WIN' ? 'VICTORY' : 'CRASH'}</h1>
-              <div className="bg-black/80 p-12 rounded-[3rem] border border-white/10 backdrop-blur-xl">
+            <div className="text-center space-y-8 w-full animate-in zoom-in duration-300">
+              <h1 className={`text-6xl md:text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic`}>{lastReason === 'WIN' ? 'VICTORY' : 'CRASH'}</h1>
+              <div className="bg-black/80 p-8 md:p-12 rounded-[3rem] border border-white/10 backdrop-blur-xl">
                 <div className="grid grid-cols-2 gap-8 mb-10 text-center">
-                  <div className="border-r border-white/10 pr-8">
+                  <div className="border-r border-white/10 pr-4 md:pr-8">
                     <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Punteggio</div>
-                    <div className="text-6xl font-orbitron font-black">{lastScore}</div>
+                    <div className="text-4xl md:text-6xl font-orbitron font-black">{lastScore}</div>
                   </div>
-                  <div className="pl-8">
+                  <div className="pl-4 md:pl-8">
                     <div className="text-[10px] text-blue-400 uppercase tracking-widest font-bold">Gemme</div>
-                    <div className="text-6xl font-orbitron font-black text-blue-400">+{lastReason === 'WIN' ? 70 : Math.floor(lastScore / 10)}</div>
+                    <div className="text-4xl md:text-6xl font-orbitron font-black text-blue-400">+{lastReason === 'WIN' ? 70 : Math.floor(lastScore / 10)}</div>
                   </div>
                 </div>
-                <p className="italic text-gray-400 text-xl px-6 mb-10 leading-relaxed">"{aiCommentary}"</p>
-                <div className="flex gap-6">
+                <p className="italic text-gray-400 text-lg md:text-xl px-6 mb-10 leading-relaxed">"{aiCommentary}"</p>
+                <div className="flex flex-col md:flex-row gap-6">
                   <Button onClick={() => setGameState(GameState.PLAYING)} variant="primary" className="flex-1 py-5">RIPROVA</Button>
                   <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="flex-1 py-5">MENU</Button>
                 </div>
