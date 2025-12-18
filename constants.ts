@@ -1,4 +1,3 @@
-
 import { LevelConfig, Skin } from './types';
 
 export const CANVAS_WIDTH = 1200;
@@ -6,9 +5,11 @@ export const CANVAS_HEIGHT = 600;
 export const GROUND_Y = CANVAS_HEIGHT - 100;
 
 export const SKINS: Skin[] = [
-  { id: '1', name: 'Cubo Base', price: 0, color: '#3b82f6', iconType: 'default' },
-  { id: '2', name: 'Happy Face', price: 0, color: '#22c55e', iconType: 'smile' },
-  { id: '3', name: 'Tech Bot', price: 50, color: '#a855f7', iconType: 'robot' },
+  { id: '1', name: 'Starter Cube', price: 0, color: '#3b82f6', iconType: 'default' },
+  { id: '2', name: 'Green Happy', price: 0, color: '#22c55e', iconType: 'smile' },
+  { id: '3', name: 'Gem Bot', price: 100, color: '#f43f5e', iconType: 'robot' },
+  
+  // SKIN PREMIUM (Accessibili solo con Premium o VIP)
   { 
     id: '4', 
     name: 'Shadow Ninja', 
@@ -19,12 +20,32 @@ export const SKINS: Skin[] = [
     exclusiveType: 'premium' 
   },
   { 
+    id: '7', 
+    name: 'Matrix Runner', 
+    price: 0, 
+    color: '#10b981', 
+    iconType: 'ninja', 
+    isExclusive: true, 
+    exclusiveType: 'premium' 
+  },
+  { 
+    id: '9', 
+    name: 'Purple Storm', 
+    price: 0, 
+    color: '#a855f7', 
+    iconType: 'pro', 
+    isExclusive: true, 
+    exclusiveType: 'premium' 
+  },
+
+  // SKIN VIP (Accessibili SOLO con VIP)
+  { 
     id: '5', 
-    name: 'ULTRA PRO GOLD', 
+    name: 'ULTRA GOLD', 
     price: 0, 
     color: '#fbbf24', 
     iconType: 'pro',
-    speedMultiplier: 0.8,
+    speedMultiplier: 0.85,
     scoreMultiplier: 2,
     isExclusive: true,
     exclusiveType: 'vip'
@@ -39,20 +60,20 @@ export const SKINS: Skin[] = [
     exclusiveType: 'vip' 
   },
   { 
-    id: '7', 
-    name: 'Matrix Runner', 
-    price: 0, 
-    color: '#10b981', 
-    iconType: 'ninja', 
-    isExclusive: true, 
-    exclusiveType: 'premium' 
-  },
-  { 
     id: '8', 
     name: 'Cyber Dragon', 
     price: 0, 
     color: '#ef4444', 
     iconType: 'pro', 
+    isExclusive: true, 
+    exclusiveType: 'vip' 
+  },
+  { 
+    id: '10', 
+    name: 'Cosmic Overlord', 
+    price: 0, 
+    color: '#ffffff', 
+    iconType: 'ninja', 
     isExclusive: true, 
     exclusiveType: 'vip' 
   },
