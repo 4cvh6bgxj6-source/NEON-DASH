@@ -10,7 +10,7 @@ const App: React.FC = () => {
   const [levelConfig, setLevelConfig] = useState<LevelConfig>(DEFAULT_LEVEL_CONFIG);
   const [selectedSkin, setSelectedSkin] = useState<Skin>(SKINS[0]);
 
-  // Controlla se oggi è il 24 Dicembre
+  // Controlla se oggi è il 24 Dicembre (Mese 11 in JS = Dicembre)
   const isChristmasEve = useMemo(() => {
     const now = new Date();
     return now.getMonth() === 11 && now.getDate() === 24;
@@ -48,16 +48,15 @@ const App: React.FC = () => {
   const [giftClaimed, setGiftClaimed] = useState<boolean>(() => localStorage.getItem('nd_gift_claimed') === 'true');
 
   // Calcola la configurazione effettiva per il gioco basata sui privilegi
+  // FIX: Forza la velocità a 1.5x (speed 12) per i VIP in Clubstep
   const effectiveConfig = useMemo(() => {
     let cfg = { ...levelConfig };
-    // Se VIP, Clubstep (3x) diventa 1.5x (velocità 12)
     if (cfg.themeName === 'Clubstep (HELL MODE)' && hasVip) {
-      cfg.speed = 12;
+      cfg.speed = 12; // Scende da 24 (3x) a 12 (1.5x)
       cfg.description = "MODALITÀ VIP: Velocità ridotta a 1.5x!";
     }
-    // Se Premium, Back on Track (2x) diventa 1.5x (velocità 12)
     else if (cfg.themeName === 'Back on Track' && hasPremium) {
-      cfg.speed = 12;
+      cfg.speed = 12; // Scende da 16 (2x) a 12 (1.5x)
       cfg.description = "MODALITÀ PREMIUM: Velocità ridotta a 1.5x!";
     }
     return cfg;
@@ -175,7 +174,7 @@ const App: React.FC = () => {
                 <h1 className="text-7xl md:text-9xl font-black font-orbitron italic tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                   NEON<span style={{ color: levelConfig.primaryColor }}>DASH</span>
                 </h1>
-                <p className="text-sm font-bold text-gray-500 tracking-[0.5em] uppercase">Rhythm Platformer</p>
+                <p className="text-sm font-bold text-gray-500 tracking-[0.5em] uppercase text-center w-full">Rhythm Platformer</p>
               </div>
 
               <div className="bg-white/5 backdrop-blur-md p-10 rounded-[2.5rem] border border-white/10 space-y-10 shadow-2xl">
@@ -191,10 +190,10 @@ const App: React.FC = () => {
                       >
                         <h3 className="font-orbitron font-black uppercase text-sm" style={{ color: lvl.primaryColor }}>{lvl.themeName}</h3>
                         <div className="text-[10px] opacity-60 mt-2 font-bold uppercase">
-                          {bonusActive ? "1.5x VIP MODE" : lvl.description}
+                          {bonusActive ? "VIP 1.5x ACTIVE" : lvl.description}
                         </div>
                         {bonusActive && (
-                          <div className="absolute top-2 right-2 text-green-400 text-[8px] font-black animate-pulse">BONUS ON</div>
+                          <div className="absolute top-2 right-2 text-green-400 text-[8px] font-black animate-pulse">FIX ON</div>
                         )}
                       </button>
                     );
@@ -203,17 +202,17 @@ const App: React.FC = () => {
                 <div className="flex flex-wrap gap-4 justify-center">
                   {isChristmasEve && !giftClaimed && (
                     <Button onClick={claimInstantGems} variant="danger" className="px-10 bg-red-600 border-red-800 animate-bounce">
-                      <i className="fas fa-gift mr-2"></i> VIGILIA: +7500 GEMS
+                      <i className="fas fa-gift mr-2"></i> VIGILIA: +7500 GEMME
                     </Button>
                   )}
                   {!isChristmasEve && !giftClaimed && (
                      <div className="px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-red-400 flex items-center gap-2">
-                        <i className="fas fa-clock"></i> REGALO DISPONIBILE SOLO IL 24 DICEMBRE
+                        <i className="fas fa-clock"></i> REGALO DISPONIBILE IL 24 DICEMBRE
                      </div>
                   )}
                   <Button onClick={() => setGameState(GameState.SKIN_SHOP)} variant="secondary" className="px-10"><i className="fas fa-palette mr-2"></i> SKINS</Button>
                   <Button onClick={() => setGameState(GameState.MEMBERSHIP_SHOP)} variant="secondary" className="px-10 bg-gradient-to-r from-amber-500 to-yellow-600 border-yellow-700 text-black"><i className="fas fa-crown mr-2"></i> STORE</Button>
-                  <Button onClick={handleStartGame} variant="primary" className="flex-1 text-2xl font-black italic shadow-[0_0_20px_rgba(59,130,246,0.5)]">PLAY NOW</Button>
+                  <Button onClick={handleStartGame} variant="primary" className="flex-1 text-2xl font-black italic shadow-[0_0_20px_rgba(59,130,246,0.5)]">GIOCA</Button>
                 </div>
               </div>
             </div>
@@ -228,8 +227,8 @@ const App: React.FC = () => {
                   <div>
                     <h3 className="text-2xl font-black italic">PREMIUM DASH</h3>
                     <ul className="text-xs text-gray-400 mt-2 space-y-2 text-left">
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Sblocca Skin Premium</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Velocità Back on Track -> 1.5x</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Skin Esclusive Premium</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Back on Track scende a 1.5x</li>
                       <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Badge Profilo Viola</li>
                     </ul>
                   </div>
@@ -244,7 +243,7 @@ const App: React.FC = () => {
                     <h3 className="text-2xl font-black italic text-yellow-500">VIP LEGEND</h3>
                     <ul className="text-xs text-gray-400 mt-2 space-y-2 text-left">
                       <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Sblocca TUTTE le Skin</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Velocità Clubstep -> 1.5x</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Clubstep scende a 1.5x</li>
                       <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Effetti Scia Dorati</li>
                     </ul>
                   </div>
@@ -253,13 +252,13 @@ const App: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12">TORNA AL MENU</Button>
+              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12">MENU</Button>
             </div>
           )}
 
           {gameState === GameState.SKIN_SHOP && (
             <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom duration-500">
-              <h2 className="text-5xl font-orbitron font-black italic">SKIN VAULT</h2>
+              <h2 className="text-5xl font-orbitron font-black italic text-center w-full">SKIN VAULT</h2>
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 overflow-y-auto max-h-[55vh]">
                 {SKINS.map(s => {
                   const isUnlocked = unlockedSkinIds.includes(s.id);
@@ -293,7 +292,7 @@ const App: React.FC = () => {
 
           {gameState === GameState.GAMEOVER && (
             <div className="text-center space-y-8 animate-in zoom-in duration-300">
-              <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic tracking-tighter`}>
+              <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic tracking-tighter w-full text-center`}>
                 {lastReason === 'WIN' ? 'VITTORIA' : 'CRASHED'}
               </h1>
               <div className="bg-black/80 p-12 rounded-[3.5rem] border border-white/10 backdrop-blur-xl shadow-2xl">
