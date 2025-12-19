@@ -10,18 +10,21 @@ const App: React.FC = () => {
   const [levelConfig, setLevelConfig] = useState<LevelConfig>(DEFAULT_LEVEL_CONFIG);
   const [selectedSkin, setSelectedSkin] = useState<Skin>(SKINS[0]);
 
-  const IS_CHRISTMAS = true; // Attiva gli sconti e il tema
-  const DISCOUNT = 0.75; // 25% di sconto
+  // Controlla se oggi è il 24 Dicembre
+  const isChristmasEve = useMemo(() => {
+    const now = new Date();
+    return now.getMonth() === 11 && now.getDate() === 24;
+  }, []);
 
-  // Prezzi base
+  const IS_CHRISTMAS = true; 
+  const DISCOUNT = 0.75; 
+
   const BASE_VIP_PRICE = 10000;
   const BASE_PREMIUM_PRICE = 5000;
 
-  // Prezzi scontati
   const vipPrice = Math.floor(BASE_VIP_PRICE * (IS_CHRISTMAS ? DISCOUNT : 1));
   const premiumPrice = Math.floor(BASE_PREMIUM_PRICE * (IS_CHRISTMAS ? DISCOUNT : 1));
 
-  // Stato Persistente
   const [gems, setGems] = useState<number>(() => {
     try {
       return parseInt(localStorage.getItem('nd_gems') || '0');
@@ -41,8 +44,25 @@ const App: React.FC = () => {
   const [aiCommentary, setAiCommentary] = useState('');
   const [lastScore, setLastScore] = useState(0);
   const [lastReason, setLastReason] = useState<string>('');
+  
+  const [giftClaimed, setGiftClaimed] = useState<boolean>(() => localStorage.getItem('nd_gift_claimed') === 'true');
 
-  // Sincronizzazione automatica skin esclusive
+  // Calcola la configurazione effettiva per il gioco basata sui privilegi
+  const effectiveConfig = useMemo(() => {
+    let cfg = { ...levelConfig };
+    // Se VIP, Clubstep (3x) diventa 1.5x (velocità 12)
+    if (cfg.themeName === 'Clubstep (HELL MODE)' && hasVip) {
+      cfg.speed = 12;
+      cfg.description = "MODALITÀ VIP: Velocità ridotta a 1.5x!";
+    }
+    // Se Premium, Back on Track (2x) diventa 1.5x (velocità 12)
+    else if (cfg.themeName === 'Back on Track' && hasPremium) {
+      cfg.speed = 12;
+      cfg.description = "MODALITÀ PREMIUM: Velocità ridotta a 1.5x!";
+    }
+    return cfg;
+  }, [levelConfig, hasVip, hasPremium]);
+
   useEffect(() => {
     setUnlockedSkinIds(prev => {
       const newUnlocked = [...prev];
@@ -70,21 +90,10 @@ const App: React.FC = () => {
     localStorage.setItem('nd_unlocked_skins', JSON.stringify(unlockedSkinIds));
     localStorage.setItem('nd_has_vip', hasVip.toString());
     localStorage.setItem('nd_has_premium', hasPremium.toString());
-  }, [gems, unlockedSkinIds, hasVip, hasPremium]);
+    localStorage.setItem('nd_gift_claimed', giftClaimed.toString());
+  }, [gems, unlockedSkinIds, hasVip, hasPremium, giftClaimed]);
 
   const handleStartGame = () => {
-    let activeConfig = { ...levelConfig };
-    
-    // Logica velocità Premium/VIP
-    if (activeConfig.themeName === 'Clubstep (HELL MODE)' && hasVip) {
-      activeConfig.speed = Math.floor(activeConfig.speed * 1.5);
-    }
-    
-    if (activeConfig.themeName === 'Back on Track' && hasPremium) {
-      activeConfig.speed = Math.floor(activeConfig.speed * 1.5);
-    }
-
-    setLevelConfig(activeConfig);
     setGameState(GameState.PLAYING);
   };
 
@@ -92,14 +101,11 @@ const App: React.FC = () => {
     setLastScore(score);
     setLastReason(deathReason);
     let earnedGems = deathReason === 'WIN' ? 100 : Math.floor(score / 5);
-    
     setAiCommentary(deathReason === 'WIN' ? "Sbalorditivo! Hai conquistato il neon." : "Analisi del fallimento in corso...");
-    
     if (deathReason !== 'WIN') {
       const comment = await getGameCommentary(score, deathReason);
       setAiCommentary(comment);
     }
-    
     setGems(prev => prev + earnedGems);
     setGameState(GameState.GAMEOVER);
   };
@@ -125,9 +131,15 @@ const App: React.FC = () => {
     }
   };
 
+  const claimInstantGems = () => {
+    if (isChristmasEve) {
+      setGems(prev => prev + 7500);
+      setGiftClaimed(true);
+    }
+  };
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-[#050505] text-white overflow-hidden">
-      {/* Background decorativo Natale */}
       {IS_CHRISTMAS && <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
         {[...Array(30)].map((_, i) => (
           <div key={i} className="snowflake" style={{ 
@@ -154,7 +166,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.PLAYING ? (
-        <GameCanvas config={levelConfig} skin={selectedSkin} onGameOver={handleGameOver} />
+        <GameCanvas config={effectiveConfig} skin={selectedSkin} onGameOver={handleGameOver} />
       ) : (
         <div className="z-10 w-full max-w-4xl px-6 flex flex-col items-center">
           {gameState === GameState.START && (
@@ -168,21 +180,37 @@ const App: React.FC = () => {
 
               <div className="bg-white/5 backdrop-blur-md p-10 rounded-[2.5rem] border border-white/10 space-y-10 shadow-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {PRESET_LEVELS.map((lvl) => (
-                    <button 
-                      key={lvl.themeName} 
-                      onClick={() => setLevelConfig(lvl)} 
-                      className={`p-6 rounded-2xl border-2 transition-all group relative overflow-hidden ${levelConfig.themeName === lvl.themeName ? 'border-white bg-white/10 scale-105' : 'border-white/5 bg-black/40 hover:border-white/20'}`}
-                    >
-                      <h3 className="font-orbitron font-black uppercase text-sm" style={{ color: lvl.primaryColor }}>{lvl.themeName}</h3>
-                      <div className="text-[10px] opacity-60 mt-2 font-bold uppercase">{lvl.description}</div>
-                      {(lvl.themeName === 'Clubstep (HELL MODE)' && hasVip) || (lvl.themeName === 'Back on Track' && hasPremium) ? (
-                        <div className="absolute top-2 right-2 text-green-400 text-[8px] font-black animate-pulse">1.5x ACTIVE</div>
-                      ) : null}
-                    </button>
-                  ))}
+                  {PRESET_LEVELS.map((lvl) => {
+                    const isSelected = levelConfig.themeName === lvl.themeName;
+                    const bonusActive = (lvl.themeName === 'Clubstep (HELL MODE)' && hasVip) || (lvl.themeName === 'Back on Track' && hasPremium);
+                    return (
+                      <button 
+                        key={lvl.themeName} 
+                        onClick={() => setLevelConfig(lvl)} 
+                        className={`p-6 rounded-2xl border-2 transition-all group relative overflow-hidden ${isSelected ? 'border-white bg-white/10 scale-105' : 'border-white/5 bg-black/40 hover:border-white/20'}`}
+                      >
+                        <h3 className="font-orbitron font-black uppercase text-sm" style={{ color: lvl.primaryColor }}>{lvl.themeName}</h3>
+                        <div className="text-[10px] opacity-60 mt-2 font-bold uppercase">
+                          {bonusActive ? "1.5x VIP MODE" : lvl.description}
+                        </div>
+                        {bonusActive && (
+                          <div className="absolute top-2 right-2 text-green-400 text-[8px] font-black animate-pulse">BONUS ON</div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex flex-wrap gap-4 justify-center">
+                  {isChristmasEve && !giftClaimed && (
+                    <Button onClick={claimInstantGems} variant="danger" className="px-10 bg-red-600 border-red-800 animate-bounce">
+                      <i className="fas fa-gift mr-2"></i> VIGILIA: +7500 GEMS
+                    </Button>
+                  )}
+                  {!isChristmasEve && !giftClaimed && (
+                     <div className="px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-red-400 flex items-center gap-2">
+                        <i className="fas fa-clock"></i> REGALO DISPONIBILE SOLO IL 24 DICEMBRE
+                     </div>
+                  )}
                   <Button onClick={() => setGameState(GameState.SKIN_SHOP)} variant="secondary" className="px-10"><i className="fas fa-palette mr-2"></i> SKINS</Button>
                   <Button onClick={() => setGameState(GameState.MEMBERSHIP_SHOP)} variant="secondary" className="px-10 bg-gradient-to-r from-amber-500 to-yellow-600 border-yellow-700 text-black"><i className="fas fa-crown mr-2"></i> STORE</Button>
                   <Button onClick={handleStartGame} variant="primary" className="flex-1 text-2xl font-black italic shadow-[0_0_20px_rgba(59,130,246,0.5)]">PLAY NOW</Button>
@@ -195,47 +223,37 @@ const App: React.FC = () => {
             <div className="text-center space-y-10 w-full animate-in slide-in-from-bottom duration-500">
               <h2 className="text-5xl font-orbitron font-black italic text-yellow-500">UPGRADES</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Premium Card */}
                 <div className={`p-8 rounded-3xl border-2 bg-black/60 flex flex-col items-center gap-6 transition-all ${hasPremium ? 'border-green-500 scale-95 opacity-80' : 'border-purple-500/30'}`}>
                   <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-bolt text-3xl"></i></div>
                   <div>
                     <h3 className="text-2xl font-black italic">PREMIUM DASH</h3>
-                    <ul className="text-xs text-gray-400 mt-2 space-y-2">
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Unlock Premium Exclusive Skins</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> 1.5x Speed on Back on Track</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Purple Profile Badge</li>
+                    <ul className="text-xs text-gray-400 mt-2 space-y-2 text-left">
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Sblocca Skin Premium</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Velocità Back on Track -> 1.5x</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Badge Profilo Viola</li>
                     </ul>
                   </div>
-                  <Button 
-                    onClick={buyPremium} 
-                    disabled={hasPremium || gems < premiumPrice}
-                    className="w-full"
-                  >
-                    {hasPremium ? 'OWNED' : `${premiumPrice} GEMS`}
+                  <Button onClick={buyPremium} disabled={hasPremium || gems < premiumPrice} className="w-full">
+                    {hasPremium ? 'POSSEDUTO' : `${premiumPrice} GEMME`}
                   </Button>
                 </div>
 
-                {/* VIP Card */}
                 <div className={`p-8 rounded-3xl border-2 bg-black/60 flex flex-col items-center gap-6 transition-all ${hasVip ? 'border-green-500 scale-95 opacity-80' : 'border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.2)]'}`}>
                   <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-crown text-3xl text-black"></i></div>
                   <div>
                     <h3 className="text-2xl font-black italic text-yellow-500">VIP LEGEND</h3>
-                    <ul className="text-xs text-gray-400 mt-2 space-y-2">
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Unlock ALL Skins (incl. Premium)</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> 1.5x Speed on Clubstep</li>
-                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Golden Glow Effects</li>
+                    <ul className="text-xs text-gray-400 mt-2 space-y-2 text-left">
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Sblocca TUTTE le Skin</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Velocità Clubstep -> 1.5x</li>
+                      <li className="flex items-center gap-2"><i className="fas fa-check text-green-500"></i> Effetti Scia Dorati</li>
                     </ul>
                   </div>
-                  <Button 
-                    onClick={buyVip} 
-                    disabled={hasVip || gems < vipPrice}
-                    className="w-full bg-yellow-500 text-black border-yellow-700"
-                  >
-                    {hasVip ? 'OWNED' : `${vipPrice} GEMS`}
+                  <Button onClick={buyVip} disabled={hasVip || gems < vipPrice} className="w-full bg-yellow-500 text-black border-yellow-700">
+                    {hasVip ? 'POSSEDUTO' : `${vipPrice} GEMME`}
                   </Button>
                 </div>
               </div>
-              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12">BACK TO MENU</Button>
+              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12">TORNA AL MENU</Button>
             </div>
           )}
 
@@ -246,8 +264,6 @@ const App: React.FC = () => {
                 {SKINS.map(s => {
                   const isUnlocked = unlockedSkinIds.includes(s.id);
                   const isSelected = selectedSkin.id === s.id;
-                  const canBuy = gems >= s.price && !s.isExclusive;
-                  
                   return (
                     <div key={s.id} className="relative group">
                       <button 
@@ -260,56 +276,40 @@ const App: React.FC = () => {
                       >
                         <div className={`w-14 h-14 border-2 border-white/40 shadow-lg ${!isUnlocked ? 'grayscale brightness-50' : ''}`} style={{ backgroundColor: s.color }} />
                         <span className="text-[10px] font-black uppercase tracking-widest">{s.name}</span>
-                        
                         {!isUnlocked && s.isExclusive && (
                           <div className="absolute top-2 right-2">
-                            {s.exclusiveType === 'vip' ? (
-                              <i className="fas fa-crown text-yellow-500 text-xs drop-shadow-md"></i>
-                            ) : (
-                              <i className="fas fa-bolt text-purple-500 text-xs drop-shadow-md"></i>
-                            )}
+                            {s.exclusiveType === 'vip' ? <i className="fas fa-crown text-yellow-500 text-xs shadow-sm"></i> : <i className="fas fa-bolt text-purple-500 text-xs shadow-sm"></i>}
                           </div>
                         )}
-
-                        {!isUnlocked && !s.isExclusive && s.price > 0 && (
-                          <div className="text-[10px] text-blue-400 font-black mt-1">
-                            <i className="fas fa-gem mr-1"></i>{s.price}
-                          </div>
-                        )}
+                        {!isUnlocked && !s.isExclusive && s.price > 0 && <div className="text-[10px] text-blue-400 font-black mt-1"><i className="fas fa-gem mr-1"></i>{s.price}</div>}
                       </button>
-
-                      {!isUnlocked && (
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                          {s.isExclusive ? `Requires ${s.exclusiveType?.toUpperCase()}` : `Cost: ${s.price} Gems`}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
-              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12 mt-4">BACK</Button>
+              <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="px-12 mt-4">TORNA</Button>
             </div>
           )}
 
           {gameState === GameState.GAMEOVER && (
             <div className="text-center space-y-8 animate-in zoom-in duration-300">
               <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic tracking-tighter`}>
-                {lastReason === 'WIN' ? 'VICTORY' : 'CRASHED'}
+                {lastReason === 'WIN' ? 'VITTORIA' : 'CRASHED'}
               </h1>
               <div className="bg-black/80 p-12 rounded-[3.5rem] border border-white/10 backdrop-blur-xl shadow-2xl">
                 <div className="flex justify-center gap-12 mb-8">
                   <div className="text-center">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-[0.2em]">Distance</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-[0.2em]">Distanza</p>
                     <div className="text-5xl font-black font-orbitron">{lastScore}m</div>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-blue-400 uppercase font-bold tracking-[0.2em]">Gems</p>
+                    <p className="text-[10px] text-blue-400 uppercase font-bold tracking-[0.2em]">Gemme</p>
                     <div className="text-5xl font-black font-orbitron text-blue-400">+{lastReason === 'WIN' ? 100 : Math.floor(lastScore / 5)}</div>
                   </div>
                 </div>
                 <p className="italic text-gray-400 text-lg mb-12 px-6 max-w-lg mx-auto leading-relaxed">"{aiCommentary}"</p>
                 <div className="flex gap-6">
-                  <Button onClick={() => setGameState(GameState.PLAYING)} className="flex-1 py-5 text-xl">RETRY</Button>
+                  <Button onClick={() => setGameState(GameState.PLAYING)} className="flex-1 py-5 text-xl">RIPROVA</Button>
                   <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="flex-1 py-5">MENU</Button>
                 </div>
               </div>
