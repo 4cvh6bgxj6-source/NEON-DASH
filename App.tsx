@@ -152,7 +152,7 @@ const App: React.FC = () => {
       {gameState !== GameState.PLAYING && (
         <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-50">
           <div className="flex gap-4">
-            <div className={`px-4 py-1 rounded-full border text-[10px] font-black uppercase tracking-tighter ${hasVip ? 'bg-yellow-500 border-yellow-300 text-black' : hasPremium ? 'bg-purple-600 border-purple-400 text-white' : 'bg-white/10 border-white/20 text-gray-400'}`}>
+            <div className={`px-4 py-1 rounded-full border text-[10px] font-black uppercase tracking-tighter shadow-lg ${hasVip ? 'bg-yellow-500 border-yellow-300 text-black' : hasPremium ? 'bg-purple-600 border-purple-400 text-white' : 'bg-white/10 border-white/20 text-gray-400'}`}>
               {hasVip ? 'VIP MEMBER' : hasPremium ? 'PREMIUM MEMBER' : 'GUEST'}
             </div>
           </div>
@@ -203,7 +203,7 @@ const App: React.FC = () => {
                   )}
                   <Button onClick={() => setGameState(GameState.SKIN_SHOP)} variant="secondary" className="px-10"><i className="fas fa-palette mr-2"></i> SKINS</Button>
                   <Button onClick={() => setGameState(GameState.MEMBERSHIP_SHOP)} variant="secondary" className="px-10 bg-gradient-to-r from-amber-500 to-yellow-600 border-yellow-700 text-black"><i className="fas fa-crown mr-2"></i> STORE</Button>
-                  <Button onClick={handleStartGame} variant="primary" className="flex-1 text-2xl font-black italic">GIOCA</Button>
+                  <Button onClick={handleStartGame} variant="primary" className="flex-1 text-2xl font-black italic shadow-[0_0_20px_rgba(59,130,246,0.5)]">GIOCA</Button>
                 </div>
               </div>
             </div>
@@ -219,9 +219,9 @@ const App: React.FC = () => {
                     {hasPremium ? 'POSSEDUTO' : `${premiumPrice} GEMME`}
                   </Button>
                 </div>
-                <div className={`p-8 rounded-3xl border-2 bg-black/60 flex flex-col items-center gap-6 transition-all ${hasVip ? 'border-green-500' : 'border-yellow-500/30'}`}>
+                <div className={`p-8 rounded-3xl border-2 bg-black/60 flex flex-col items-center gap-6 transition-all ${hasVip ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)]' : 'border-yellow-500/30'}`}>
                   <h3 className="text-2xl font-black italic text-yellow-500">VIP</h3>
-                  <Button onClick={buyVip} disabled={hasVip || gems < vipPrice} className="w-full bg-yellow-500 text-black">
+                  <Button onClick={buyVip} disabled={hasVip || gems < vipPrice} className="w-full bg-yellow-500 text-black border-yellow-700">
                     {hasVip ? 'POSSEDUTO' : `${vipPrice} GEMME`}
                   </Button>
                 </div>
@@ -241,11 +241,11 @@ const App: React.FC = () => {
                     <button 
                       key={s.id}
                       onClick={() => isUnlocked ? setSelectedSkin(s) : !s.isExclusive && unlockWithGems(s)}
-                      className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${isSelected ? 'border-white bg-white/20' : isUnlocked ? 'border-white/20 bg-white/5' : 'border-white/5 bg-black/40'}`}
+                      className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${isSelected ? 'border-white bg-white/20 scale-105' : isUnlocked ? 'border-white/20 bg-white/5 hover:bg-white/10' : 'border-white/5 bg-black/40'}`}
                     >
-                      <div className="w-12 h-12 border-2 border-white/40" style={{ backgroundColor: s.color }} />
-                      <span className="text-[10px] font-black uppercase">{s.name}</span>
-                      {!isUnlocked && !s.isExclusive && <span className="text-[10px] text-blue-400">{s.price} G</span>}
+                      <div className="w-12 h-12 border-2 border-white/40 shadow-md" style={{ backgroundColor: s.color }} />
+                      <span className="text-[10px] font-black uppercase tracking-tighter">{s.name}</span>
+                      {!isUnlocked && !s.isExclusive && <span className="text-[10px] text-blue-400 font-bold"><i className="fas fa-gem mr-1"></i>{s.price}</span>}
                     </button>
                   );
                 })}
@@ -256,20 +256,20 @@ const App: React.FC = () => {
 
           {gameState === GameState.GAMEOVER && (
             <div className="text-center space-y-8 animate-in zoom-in duration-300">
-              <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic`}>
-                {lastReason === 'WIN' ? 'WIN' : 'CRASHED'}
+              <h1 className={`text-8xl font-black ${lastReason === 'WIN' ? 'text-green-500' : 'text-red-600'} font-orbitron italic tracking-tighter`}>
+                {lastReason === 'WIN' ? 'WINNER' : 'CRASHED'}
               </h1>
-              <div className="bg-black/80 p-12 rounded-[3.5rem] border border-white/10 backdrop-blur-xl">
-                <div className="flex justify-center gap-12 mb-8">
+              <div className="bg-black/80 p-12 rounded-[3.5rem] border border-white/10 backdrop-blur-xl shadow-2xl">
+                <div className="flex justify-center gap-12 mb-8 text-center">
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase">Distanza</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Distanza</p>
                     <div className="text-5xl font-black font-orbitron">{lastScore}m</div>
                   </div>
                 </div>
-                <p className="italic text-gray-400 mb-8">"{aiCommentary}"</p>
+                <p className="italic text-gray-400 mb-8 max-w-sm mx-auto leading-relaxed">"{aiCommentary}"</p>
                 <div className="flex gap-4">
-                  <Button onClick={() => setGameState(GameState.PLAYING)} className="flex-1">RIPROVA</Button>
-                  <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="flex-1">MENU</Button>
+                  <Button onClick={() => setGameState(GameState.PLAYING)} className="flex-1 py-4 text-lg">RIPROVA</Button>
+                  <Button onClick={() => setGameState(GameState.START)} variant="secondary" className="flex-1 py-4 text-lg">MENU</Button>
                 </div>
               </div>
             </div>
