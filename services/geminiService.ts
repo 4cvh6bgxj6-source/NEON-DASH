@@ -1,8 +1,7 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 export async function getGameCommentary(score: number, deathReason: string): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({

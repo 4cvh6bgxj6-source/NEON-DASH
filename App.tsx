@@ -48,7 +48,7 @@ const App: React.FC = () => {
   const [giftClaimed, setGiftClaimed] = useState<boolean>(() => localStorage.getItem('nd_gift_claimed') === 'true');
 
   // Calcola la configurazione effettiva per il gioco basata sui privilegi
-  // FIX: Forza la velocità a 1.5x (speed 12) per i VIP in Clubstep
+  // FIX: Forza la velocità a 1.5x (speed 12) per i VIP in Clubstep (originariamente 3x / speed 24)
   const effectiveConfig = useMemo(() => {
     let cfg = { ...levelConfig };
     if (cfg.themeName === 'Clubstep (HELL MODE)' && hasVip) {
@@ -174,7 +174,7 @@ const App: React.FC = () => {
                 <h1 className="text-7xl md:text-9xl font-black font-orbitron italic tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                   NEON<span style={{ color: levelConfig.primaryColor }}>DASH</span>
                 </h1>
-                <p className="text-sm font-bold text-gray-500 tracking-[0.5em] uppercase text-center w-full">Rhythm Platformer</p>
+                <p className="text-sm font-bold text-gray-500 tracking-[0.3em] uppercase text-center w-full">Project by zhoyan</p>
               </div>
 
               <div className="bg-white/5 backdrop-blur-md p-10 rounded-[2.5rem] border border-white/10 space-y-10 shadow-2xl">
